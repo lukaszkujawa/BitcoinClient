@@ -8,4 +8,6 @@ case class VerAck() extends Message {
 
 object VerAck {
 
+  def fromByteArray(raw: Array[Byte]) = VerAck()
+
 }

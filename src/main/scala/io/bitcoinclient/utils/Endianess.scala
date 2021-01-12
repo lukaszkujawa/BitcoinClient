@@ -2,7 +2,7 @@ package io.bitcoinclient.utils
 
 import java.nio.{ByteBuffer, ByteOrder}
 
-package object Eindianess {
+package object Endianess {
 
   implicit class ToLittleEndianInt(val value: Int) extends AnyVal {
     def toLittleEndian: Array[Byte] = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array()
@@ -26,6 +26,10 @@ package object Eindianess {
 
   implicit class ToShortFromBigEndian(val value: Array[Byte]) extends AnyVal {
     def toShortFromBigEndian: Short = ByteBuffer.wrap(value).order(ByteOrder.BIG_ENDIAN).asShortBuffer().get
+  }
+
+  implicit class ToShortFromLittleEndian(val value: Array[Byte]) extends AnyVal {
+    def toShortFromLittleEndian: Short = ByteBuffer.wrap(value).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get
   }
 
 

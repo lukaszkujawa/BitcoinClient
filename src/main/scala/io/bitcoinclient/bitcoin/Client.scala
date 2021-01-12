@@ -17,6 +17,7 @@ case class Client(conn: Connection) extends Runnable {
         rawResponseHeader <- EitherT(conn.readBytes(24))
         responseHeader = Header.fromByteArray(rawResponseHeader)
         payload <- EitherT(conn.readBytes(responseHeader.payloadSize))
+        _ = println(responseHeader.messageFromPayload(payload))
         _ = println("---------------")
         _ = println("| " + responseHeader.commandName.filter(_>0).map(_.toChar).mkString)
         _ = println("---Header -----")
@@ -47,13 +48,13 @@ case class Client(conn: Connection) extends Runnable {
       header = Header.create(ver)
       _ <- EitherT(conn.write(header.toArray))
       _ <- EitherT(conn.write(versionMessage.get.toArray))
-      data <- EitherT(conn.read(Array.fill(24)(0x00)))
+      data <- EitherT(conn.readBytes(24))
       responseHeader = Header.fromByteArray(data)
       rawVersion <- EitherT(conn.read(Array.fill(responseHeader.payloadSize)(0x00)))
       responseVersion = Version.fromByteArray(rawVersion)
       verAck = Header.create(VerAck())
       _ <- EitherT(conn.write(verAck.toArray))
-      data2 <- EitherT(conn.read(Array.fill(24)(0x00)))
+      data2 <- EitherT(conn.readBytes(24))
       responseHeader2 <- EitherT.fromEither[IO](Header.verAckFromByteArray(data2))
     } yield ((responseHeader2))).value
 

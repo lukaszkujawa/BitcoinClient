@@ -3,7 +3,7 @@ package io.bitcoinclient.bitcoin.messages
 import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.security.MessageDigest
 import java.nio.ByteBuffer
-import io.bitcoinclient.utils.Eindianess._
+import io.bitcoinclient.utils.Endianess._
 
 case class Header(magicBytes: Int, commandName: Array[Byte], payloadSize: Int, checkSum: Array[Byte]) extends  Message {
 
@@ -26,8 +26,35 @@ case class Header(magicBytes: Int, commandName: Array[Byte], payloadSize: Int, c
     case _ => byteOutputStream.toByteArray
   }
 
+  def messageFromPayload(raw: Array[Byte]) : Either[Unit, Message] = {
+    val default : Either[Unit, Array[Byte] => Message] = Left()
+    MessageTypes.fromHeader.foldLeft(default)(
+      (acc, v) => {
+       // println(v._1.sameElements(commandName))
+        if(acc.isInstanceOf[Left[_,_]] && v._1.sameElements(commandName)) { Right(v._2) } else { acc }} )
+        match {
+          case Right(f) => Right(f(raw))
+          case _ => Left()
+    }
+  }
+
+
 }
 
+object MessageTypes {
+  val VERSION: Array[Byte] = Array('v', 'e', 'r', 's', 'i', 'o', 'n', 0, 0, 0, 0, 0)
+  val VERACK: Array[Byte] = Array('v', 'e', 'r', 'a', 'c', 'k', 0, 0, 0, 0, 0, 0)
+  val GETADDR: Array[Byte] = Array('g', 'e', 't', 'a', 'd', 'd', 'r', 0, 0, 0, 0, 0)
+  val ADDR: Array[Byte] = Array('a', 'd', 'd', 'r', 0, 0, 0, 0, 0, 0, 0, 0)
+
+  val fromHeader: List[(Array[Byte], (Array[Byte]) => Message)] = List(
+    (VERSION, Version.fromByteArray),
+    (VERACK, VerAck.fromByteArray),
+    (GETADDR, GetAddr.fromByteArray),
+    (ADDR, Addr.fromByteArray)
+  )
+
+}
 
 object Header {
 
@@ -35,10 +62,10 @@ object Header {
   val sha256 = MessageDigest.getInstance("SHA-256")
 
   def getMessageName(m: Message): Array[Byte] = m match {
-    case _: Version => Array('v', 'e', 'r', 's', 'i', 'o', 'n', 0, 0, 0, 0, 0)
-    case _: VerAck => Array('v', 'e', 'r', 'a', 'c', 'k', 0, 0, 0, 0, 0, 0)
-    case _: GetAddr => Array('g', 'e', 't', 'a', 'd', 'd', 'r', 0, 0, 0, 0, 0)
-    case _: Addr => Array('a', 'd', 'd', 'r', 0, 0, 0, 0, 0, 0, 0, 0)
+    case _: Version => MessageTypes.VERSION
+    case _: VerAck => MessageTypes.VERACK
+    case _: GetAddr => MessageTypes.GETADDR
+    case _: Addr => MessageTypes.ADDR
     case _ => Array(0,0,0,0,0,0,0,0,0,0,0,0)
   }
 
@@ -57,7 +84,6 @@ object Header {
       case false => Left()
     }
   }
-
 
   def fromByteArray(raw: Array[Byte]) : Header =
     Header(

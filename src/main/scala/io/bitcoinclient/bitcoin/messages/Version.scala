@@ -2,7 +2,7 @@ package io.bitcoinclient.bitcoin.messages
 
 import java.io.{ByteArrayOutputStream, DataOutputStream}
 
-import io.bitcoinclient.utils.Eindianess._
+import io.bitcoinclient.utils.Endianess._
 
 case class Version(version: Array[Byte],
                    services: Array[Byte],
