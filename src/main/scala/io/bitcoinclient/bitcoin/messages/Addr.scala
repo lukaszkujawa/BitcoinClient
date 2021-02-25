@@ -31,13 +31,44 @@ case class IpAddress(timestamp: Int, services: Int, ip: Array[Byte], port: Int) 
     case _ => getIp + ":" + port
   }
 
+
+
 }
 
+object IpAddress {
+
+  def fromByteArray(raw: Array[Byte]): IpAddress = IpAddress(
+    raw.take(4).toIntFromLittleEndian,
+    raw.drop(4).take(4).toIntFromLittleEndian,
+    raw.drop(12).take(16),
+    raw.drop(28).take(2).toShortFromBigEndian & 0xFFFF,
+  )
+
+}
+
+
 object Addr {
+
+  def fromByteArray(raw: Array[Byte]) =  {
+    val addrCount = VariableInt.parse(raw)
+
+    var offset = raw.head & 0xFF match {
+      case 0xFF => 9
+      case 0xFE => 5
+      case 0xFD => 3
+      case _ => 1
+    }
+
+    var ips: List[IpAddress] = raw.drop(offset).grouped(30).map(rawIp => IpAddress.fromByteArray(rawIp)).toList
+
+    Addr(addrCount, ips)
+  }
 
   /*
   Not a *very* functional function :/
    */
+
+  /*
   def fromByteArray(raw: Array[Byte]) =  {
     val addrCount = VariableInt.parse(raw)
     var ips: List[IpAddress] = List()
@@ -61,5 +92,7 @@ object Addr {
 
     Addr(addrCount, ips)
   }
+
+   */
 
 }

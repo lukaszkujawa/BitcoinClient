@@ -20,9 +20,10 @@ case class Client(conn: Connection) extends Runnable {
         message = responseHeader.messageFromPayload(payload)
         _ = message match {
           case Right(a: Addr) => println(a)
+          case Right(v: Version) => println(v.agent)
           case _ => null
         }
-        /*
+
         _ = println("---------------")
         _ = println("| " + responseHeader.commandName.filter(_>0).map(_.toChar).mkString)
         _ = println("---Header -----")
@@ -31,7 +32,7 @@ case class Client(conn: Connection) extends Runnable {
         _ = Debug.dumpBinary(payload)
         _ = println("========\n")
 
-         */
+
       } yield(payload)).value.unsafeRunSync()
     }
   }
@@ -53,6 +54,8 @@ case class Client(conn: Connection) extends Runnable {
     (for {
       ver <- EitherT.fromOption[IO](versionMessage, ())
       header = Header.create(ver)
+      _ = Debug.dumpBinary(header.toArray)
+      _ = Debug.dumpBinary(versionMessage.get.toArray)
       _ <- EitherT(conn.write(header.toArray))
       _ <- EitherT(conn.write(versionMessage.get.toArray))
       data <- EitherT(conn.readBytes(24))

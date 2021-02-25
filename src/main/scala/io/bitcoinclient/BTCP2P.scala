@@ -11,7 +11,7 @@ object BTCP2P extends App {
 
 
   val app= for {
-    connection <- Connection.create("160.16.0.30", 8333)
+    connection <- Connection.create("71.231.145.228", 8333)
     client = Client(connection)
     resp <- client.connect
 
