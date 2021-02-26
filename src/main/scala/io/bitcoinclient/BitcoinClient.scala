@@ -3,7 +3,7 @@ package io.bitcoinclient
 import cats.data.EitherT
 import cats.effect.IO
 import io.bitcoinclient.bitcoin.messages.Message
-import io.bitcoinclient.messages.{GetAddr, Header, VerAck, Version}
+import io.bitcoinclient.messages.{GetAddr, Header, Mempool, Message, VerAck, Version}
 import io.bitcoinclient.utils.Debug
 import scodec.{Codec, Err}
 import scodec.bits.{BitVector, ByteVector, HexStringSyntax}
@@ -16,12 +16,14 @@ case class BitcoinClient(conn: Connection) extends Runnable
 
   def run() = {
     while(true) {
-      (for {
+      val resp = (for {
         respRawHeader <- EitherT(conn.readBytes(Header.SIZE))
         respHeader <- EitherT.fromEither[IO](Header.fromByteArray(respRawHeader))
-        _ = EitherT(conn.readBytes(respHeader.payloadSize.toInt))
-        _ = println(respHeader.commandName)
-      } yield (respHeader) ).value.unsafeRunSync()
+        payload <- EitherT(conn.readBytes(respHeader.payloadSize.toInt))
+        _ = Message.parseMessage(respHeader, payload)
+      } yield (respHeader, payload) ).value.unsafeRunSync()
+
+      //println(resp.)
     }
   }
 
@@ -32,6 +34,14 @@ case class BitcoinClient(conn: Connection) extends Runnable
     _ = conn.write(header)
   } yield()).value
 
+  def mempool: IO[Either[Err, Unit]] = {
+    val header = Header((), Mempool.commandName, 0, Header.checksum(Array()))
+
+    (for {
+      binHeader <- EitherT.fromEither[IO](header.toEither)
+      _ = conn.write(binHeader)
+    } yield ()).value
+  }
 
   def connect = {
 
@@ -83,7 +93,7 @@ case class Connection(sock: Socket, in: DataInputStream, out: DataOutputStream) 
 
   def write(payload: Array[Byte]): IO[Either[Unit, Unit]] = Connection.write(this, payload)
 
-  def readBytes(num: Int): IO[Either[Unit, Array[Byte]]] = read(Array.fill(num)(0x00))
+  def readBytes(num: Int): IO[Either[Any, Array[Byte]]] = read(Array.fill(num)(0x00))
 
   def read(buff: Array[Byte]): IO[Either[Unit, Array[Byte]]] = Connection.read(this, buff)
 

@@ -1,9 +1,9 @@
 package io.bitcoinclient
 
 
-import io.bitcoinclient.codecs.VarInt.varint
+
 import io.bitcoinclient.example.barDeco
-import io.bitcoinclient.messages.{Header, Version}
+import io.bitcoinclient.messages.{Header, InvItem, Version}
 import io.bitcoinclient.utils.Debug
 import scodec.Attempt.Successful
 import scodec.SizeBound.unknown
@@ -15,6 +15,9 @@ import scodec._
 import scodec.codecs._
 import scodec.bits._
 import cats.effect.{Fiber, IO}
+import io.bitcoinclient.codecs.Inventory.inventory
+import io.bitcoinclient.codecs.InventoryItem.inventoryitem
+import io.bitcoinclient.codecs.VarInt.varint
 
 
 object example extends App {
@@ -61,7 +64,7 @@ object example extends App {
 
   object HHeader {
     implicit val codec: Codec[HHeader] = {
-      ("magicBytes" | constant(hex"F9BEB4D97")) ::
+        ("magicBytes" | constant(hex"F9BEB4D97")) ::
         ("commandName" | bytes(12)) :: //.xmap[String](ascii.decode(_).require.value, ascii) ::
         ("payloadSize" | uint32) ::
         ("checkSum" | bytes(4))
@@ -124,11 +127,23 @@ object example extends App {
     .toEither
     .map(println)
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val ctx = IO.contextShift(global)
+  val invMsg = hex"0201000000CBA7A14A357C0F02E8AA44D8A3BCB1D206FEFEDEBD11BC154F1EE1C106450BAC010000007CD12244A39CBD0E770D95E650B9A85C82E22485299D398090A641FCA2FD8E6C"
 
-  val io = IO(println("Hello!"))
-  val fiber: IO[Fiber[IO, Unit]] = io.start
 
-  fiber.unsafeRunSync()
+  val invRowCodec = uint32L.flatMap( msgType => msgType match {
+    case 1 => bytes(32)
+    case _ => bytes(16)
+  })
+
+  inventoryitem
+    .decode(hex"01000000CBA7A14A357C0F02E8AA44D8A3BCB1D206FEFEDEBD11BC154F1EE1C106450BAC".bits)
+    .map(println)
+
+
+  list[InvItem](inventoryitem)
+    .decode(hex"01000000CBA7A14A357C0F02E8AA44D8A3BCB1D206FEFEDEBD11BC154F1EE1C106450BAC010000007CD12244A39CBD0E770D95E650B9A85C82E22485299D398090A641FCA2FD8E6C".bits)
+    .map(println)
+
+  //inventory.map(println).decode(invMsg.bits)
+
 }

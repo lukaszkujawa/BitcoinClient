@@ -1,6 +1,12 @@
 package io.bitcoinclient.messages
 
-case class GetAddr() {}
+import scodec.Err
+
+case class GetAddr() extends Message {
+
+  def toEither: Either[Err, Array[Byte]] = Right(Array[Byte]())
+
+}
 
 object GetAddr {
 

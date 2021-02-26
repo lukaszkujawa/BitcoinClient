@@ -1,8 +1,10 @@
 package io.bitcoinclient.messages
 
-import scodec.Codec
+import scodec.Err
 
-case class VerAck() {
+case class VerAck() extends Message {
+
+  def toEither: Either[Err, Array[Byte]] = Right(Array[Byte]())
 
 }
 
