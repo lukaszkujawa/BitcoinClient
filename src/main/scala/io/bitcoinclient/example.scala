@@ -51,25 +51,31 @@ object example extends App {
 
   }
 
-  val hex = hex"F9BEB4D973656E646865616465727300000000005DF6E0E2".bits
+
+
 
   //  pari.as[Bar]
   // println(pari.decode(hex).require.value)
 
-  case class HHeader(magicBytes: Unit, commandName: ByteVector, payloadSize: Long, checkSum: ByteVector)
+  case class Header(magicBytes: Unit, commandName: ByteVector, payloadSize: Long, checkSum: ByteVector)
+
+  object Header {
+    implicit val codec: Codec[Header] = {
+        ("magicBytes" | constant(hex"f9beb4d9")) ::
+        ("commandName" | bytes(12)) ::
+        ("payloadSize" | uint32) ::
+        ("checkSum" | bytes(4))
+    }.as[Header]
+  }
+
+  val hex = hex"F9BEB4D973656E646865616465727300000000005DF6E0E2".bits
+
+  println(Codec.decode[Header](hex).require.value)
+
 
   var barDeco = {
     uint32 :: uint32
   }.as[Bar]
-
-  object HHeader {
-    implicit val codec: Codec[HHeader] = {
-        ("magicBytes" | constant(hex"F9BEB4D97")) ::
-        ("commandName" | bytes(12)) :: //.xmap[String](ascii.decode(_).require.value, ascii) ::
-        ("payloadSize" | uint32) ::
-        ("checkSum" | bytes(4))
-    }.as[HHeader]
-  }
 
   case class Woot(i: Int)
 
@@ -77,7 +83,7 @@ object example extends App {
 
   println(deco.decode(hex"ffffffff".bits))
 
-  Codec.decode[HHeader](hex).map(r => println(r))
+
 
 
   println(
@@ -144,6 +150,23 @@ object example extends App {
     .decode(hex"01000000CBA7A14A357C0F02E8AA44D8A3BCB1D206FEFEDEBD11BC154F1EE1C106450BAC010000007CD12244A39CBD0E770D95E650B9A85C82E22485299D398090A641FCA2FD8E6C".bits)
     .map(println)
 
+
+
+
+  uint16L
+    .decode(hex"0100".bits)
+    .map(println)
+
+  uint16
+    .decode(hex"0100".bits)
+    .map(println)
   //inventory.map(println).decode(invMsg.bits)
 
+  uint8
+    .flatMap( len =>
+      bytes(len).map(
+        b => ascii.decode(b.bits).toString))
+    .decode(hex"0261626364".bits)
+    .toEither
+    .map(println)
 }

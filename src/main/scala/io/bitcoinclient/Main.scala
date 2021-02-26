@@ -10,10 +10,11 @@ object Main extends App {
     clinet = BitcoinClient(connection)
     resp <- clinet.connect
     _ <- clinet.listen
-    //_ <- clinet.mempool
+    _ <- clinet.mempool
     //_ <- clinet.getAddr
   } yield()
 
   app.unsafeRunSync()
 
 }
+
